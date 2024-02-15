@@ -1,6 +1,7 @@
 import pygame as pg
 from support import loadSprite,import_folder
 from eventhandler import EventHandler
+from timer import Timer
 
 class Player(pg.sprite.Sprite):
     def __init__(self,pos,group):
@@ -13,10 +14,12 @@ class Player(pg.sprite.Sprite):
 
         self.frame_index = 0
         self.animationTime = 1 / 8
-        
+
         self.direction = pg.math.Vector2()
 
         self.speed = 2
+        
+        self.attackTimer = Timer(300)
 
         self.initializeSprites()
 
@@ -40,10 +43,13 @@ class Player(pg.sprite.Sprite):
 
     def handleAnimation(self):
         animation = self.animationStates[self.currentState]
-        self.frame_index += self.animationTime 
+        self.frame_index += self.animationTime
 
         if self.frame_index >= len(animation):
             self.frame_index = 0
+            if "_Attack" in self.currentState:
+                self.currentState = self.currentState.replace("_Attack","_Idle")
+
         
         self.sprite = animation[int(self.frame_index)].convert_alpha()
         self.rect = self.sprite.get_rect(center=self.hitbox.center)
@@ -52,17 +58,28 @@ class Player(pg.sprite.Sprite):
         self.handleAnimation()
    
     def idleState(self):
+        if "_Attack" in self.currentState: return
+
         self.direction.x = 0 
         self.direction.y = 0
         if not "_Idle" in self.currentState:
-                self.currentState = f"{self.currentState}_Idle"
+           self.currentState = f"{self.currentState}_Idle"
 
     def handleMovement(self):
         self.hitbox.x += self.direction.x * self.speed
         self.hitbox.y += self.direction.y * self.speed
         self.rect.center = self.hitbox.center    
+    
+
+    def handlePlayerAttack(self):
+        for direction in ["Up","Down","Left","Right"]:
+            if direction in self.currentState:
+               self.frame_index = 0
+               self.currentState = f"{direction}_Attack"
 
     def handleStateDirection(self,value,state):
+        if "_Attack" in self.currentState: return
+
         if state in ["Up","Down"]:
            self.direction.x = 0
            self.direction.y = value
@@ -71,7 +88,7 @@ class Player(pg.sprite.Sprite):
            self.direction.y = 0
         self.currentState = state
 
-    def handlePlayerInput(self):
+    def handlePlayerInput(self): 
         if EventHandler.pressingUpButton():
            self.handleStateDirection(-1,"Up")
         elif EventHandler.pressingDownButton():
@@ -83,7 +100,13 @@ class Player(pg.sprite.Sprite):
         else:
            self.idleState()
 
+        if EventHandler.pressingAttackButton():
+           if not self.attackTimer.activated:
+              self.handlePlayerAttack()
+              self.attackTimer.activate()
+
     def update(self):
+        self.attackTimer.update()
         self.handlePlayerInput()
         self.handleMovement()
         self.handleRendering()

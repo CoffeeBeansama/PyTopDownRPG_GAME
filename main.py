@@ -41,8 +41,8 @@ class Game:
 
           EventHandler.handlePlayerInput()
           self.screen.fill("black")
-          self.renderFPS()                  
           self.level.update()
+          self.renderFPS()                  
           pg.display.update()
           self.clock.tick(self.FPS)
 

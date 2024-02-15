@@ -29,6 +29,6 @@ class EventHandler(object):
     def pressingLeftButton():
         return EventHandler.pressingLeft
     
-    def pressingInteractButton():
+    def pressingAttackButton():
         return EventHandler.pressingAttack
 
