@@ -2,14 +2,16 @@ import pygame as pg
 from support import loadSprite,import_folder
 from eventhandler import EventHandler
 from timer import Timer
+from particle import DustParticle
 
 class Player(pg.sprite.Sprite):
-    def __init__(self,pos,group):
+    def __init__(self,pos,group,dustParticleGroup):
         super().__init__(group)
         
         self.pos = pos
         self.group = group
-        
+        self.particleGroup = dustParticleGroup
+
         self.currentState = "Down_Idle"
 
         self.frame_index = 0
@@ -20,8 +22,9 @@ class Player(pg.sprite.Sprite):
         self.speed = 2
         
         self.attackTimer = Timer(300)
-
+        
         self.initializeSprites()
+        self.initializeDustParticles()
 
     def initializeSprites(self):
         self.spritePath = "Sprites/Player/"
@@ -40,6 +43,13 @@ class Player(pg.sprite.Sprite):
         for animations in self.animationStates.keys():
             fullPath = self.spritePath + animations
             self.animationStates[animations] = import_folder(fullPath)
+        
+
+    def initializeDustParticles(self):
+        self.dustParticleTimer = Timer(200)
+        self.dustParticles = DustParticle(self.particleGroup)
+        
+        
 
     def handleAnimation(self):
         animation = self.animationStates[self.currentState]
@@ -70,6 +80,23 @@ class Player(pg.sprite.Sprite):
         self.hitbox.y += self.direction.y * self.speed
         self.rect.center = self.hitbox.center    
     
+    def handleDustParticles(self):
+        if "_Idle" in self.currentState: return
+
+        self.dustParticleTimer.update()
+
+        if not self.dustParticleTimer.activated:
+
+           rect = self.rect
+
+           match self.currentState:
+               case "Down": position = (rect.centerx + 2,rect.centery - 7),
+               case "Up" : position = (rect.centerx + 2,rect.centery + 12),
+               case "Left": position = (rect.centerx + 7 ,rect.centery + 15),
+               case "Right": position = (rect.centerx - 7, rect.centery + 15)
+
+           self.dustParticles.startParticle(position)
+           self.dustParticleTimer.activate()
 
     def handlePlayerAttack(self):
         for direction in ["Up","Down","Left","Right"]:
@@ -79,6 +106,8 @@ class Player(pg.sprite.Sprite):
 
     def handleStateDirection(self,value,state):
         if "_Attack" in self.currentState: return
+        
+        self.handleDustParticles()
 
         if state in ["Up","Down"]:
            self.direction.x = 0
@@ -106,6 +135,7 @@ class Player(pg.sprite.Sprite):
               self.attackTimer.activate()
 
     def update(self):
+        self.dustParticles.update()
         self.attackTimer.update()
         self.handlePlayerInput()
         self.handleMovement()
