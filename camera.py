@@ -7,8 +7,10 @@ class CameraGroup(pg.sprite.Group):
         self.display_canvas = pg.display.get_surface()
         self.half_width = self.display_canvas.get_size()[0] // 2
         self.half_height = self.display_canvas.get_size()[1] // 2
-
         
+        self.ground = pg.image.load("Map/map.png").convert_alpha()
+        self.groundRect = self.ground.get_rect(topleft=(0,0)) 
+
         self.internalSurfaceSize = (300, 300)
         self.internalSurface = pg.Surface(self.internalSurfaceSize, pg.SRCALPHA)
         self.internalRect = self.internalSurface.get_rect(center=(self.half_width, self.half_height))
@@ -30,7 +32,10 @@ class CameraGroup(pg.sprite.Group):
         self.offset.y = player.rect.centery - self.half_height
 
         self.internalSurface.fill("black")
-        
+
+        floor_offset_pos = self.groundRect.topleft - self.offset + self.internalOffset
+        self.internalSurface.blit(self.ground, floor_offset_pos)        
+
         for sprite in sorted(self.sprites(), key=lambda sprite: sprite.rect.centery):
             self.offset_rect = sprite.rect.topleft - self.offset + self.internalOffset
             self.internalSurface.blit(sprite.sprite, self.offset_rect)
