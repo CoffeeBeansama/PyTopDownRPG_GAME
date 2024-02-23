@@ -4,11 +4,12 @@ from eventhandler import EventHandler
 from timer import Timer
 
 class Player(pg.sprite.Sprite):
-    def __init__(self,pos,group):
+    def __init__(self,pos,group,createAttack):
         super().__init__(group)
         
         self.pos = pos
         self.group = group
+        self.createAttack = createAttack
 
         self.currentState = "Down_Idle"
 
@@ -19,10 +20,12 @@ class Player(pg.sprite.Sprite):
 
         self.speed = 2
         
+        self.attack = 5
+
         self.attackTimer = Timer(300)
         
         self.initializeSprites()
-
+    
     def initializeSprites(self):
         self.spritePath = "Sprites/Player/"
 
@@ -89,6 +92,8 @@ class Player(pg.sprite.Sprite):
             if direction in self.currentState:
                self.frame_index = 0
                self.currentState = f"{direction}_Attack"
+               self.createAttack()
+
 
     def handleStateDirection(self,value,state):
         if "_Attack" in self.currentState: return

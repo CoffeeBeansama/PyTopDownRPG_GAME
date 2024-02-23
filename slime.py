@@ -6,6 +6,9 @@ class Slime(pg.sprite.Sprite):
         super().__init__(group)
         self.pos = pos
         self.player = player
+        
+        self.maxHP = 10
+        self.currentHP = self.maxHP
 
         self.initializeSprites()
         
