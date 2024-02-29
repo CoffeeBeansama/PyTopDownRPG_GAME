@@ -21,6 +21,7 @@ class PlayerAttack(pg.sprite.Sprite):
 
     def playerHit(self,enemies):
         for enemy in enemies:
-            enemy.currentHP -= self.damage
-            print(enemy.currentHP)
+            if hasattr(enemy,"takeDamage"):
+               enemy.takeDamage(self.damage)
+            
         

@@ -1,5 +1,5 @@
 import pygame as pg
-from support import loadSprite,import_folder
+from support import loadSprite,import_folder,drawBox
 from eventhandler import EventHandler
 from timer import Timer
 
@@ -7,6 +7,7 @@ class Player(pg.sprite.Sprite):
     def __init__(self,pos,group,createAttack):
         super().__init__(group)
         
+        self.screen = pg.display.get_surface()
         self.pos = pos
         self.group = group
         self.createAttack = createAttack
@@ -17,10 +18,18 @@ class Player(pg.sprite.Sprite):
         self.animationTime = 1 / 8
 
         self.direction = pg.math.Vector2()
+        
+        self.maxHP = 50
+        self.currentHP = self.maxHP
 
         self.speed = 2
         
         self.attack = 5
+
+        self.maxHPBarWidth = 300
+        self.maxHPBarHeight = 25
+        self.hpBarXPosition = 10
+        self.hpBarYPosition = 460
 
         self.attackTimer = Timer(300)
         
@@ -43,11 +52,7 @@ class Player(pg.sprite.Sprite):
         for animations in self.animationStates.keys():
             fullPath = self.spritePath + animations
             self.animationStates[animations] = import_folder(fullPath)
-        
-
-        
-        
-
+    
     def handleAnimation(self):
         animation = self.animationStates[self.currentState]
         self.frame_index += self.animationTime
@@ -76,28 +81,36 @@ class Player(pg.sprite.Sprite):
         self.hitbox.x += self.direction.x * self.speed
         self.hitbox.y += self.direction.y * self.speed
         self.rect.center = self.hitbox.center    
-   
+    
+
+    def switchState(self,newState):
+        self.frame_index = 0
+        self.currentState = newState
+
     def isMoving(self):
         if self.direction.x != 0:
            return True
         if self.direction.y != 0:
            return True
         return False
-       
+    
+    def takeDamage(self,damage):
+        self.currentHP -= damage
+        print(self.currentHP)
+        if self.currentHP <= 0:
+           self.switchState("Death")
 
     def handlePlayerAttack(self):
         if "_Attack" in self.currentState: return
 
         for direction in ["Up","Down","Left","Right"]:
             if direction in self.currentState:
-               self.frame_index = 0
-               self.currentState = f"{direction}_Attack"
+               self.switchState(f"{direction}_Attack")
                self.createAttack()
 
 
     def handleStateDirection(self,value,state):
-        if "_Attack" in self.currentState: return
-        
+        if "_Attack" in self.currentState: return 
         if state in ["Up","Down"]:
            self.direction.x = 0
            self.direction.y = value
@@ -123,8 +136,28 @@ class Player(pg.sprite.Sprite):
               self.handlePlayerAttack()
               self.attackTimer.activate()
 
+    def getHPBar(self,x,y,width,maxWidth,height): 
+        red = (255,0, 0)
+        green = (0, 255, 0)
+        pg.draw.rect(self.screen,red,(x,y,maxWidth,height))
+        return pg.draw.rect(self.screen,green,(x,y,width,height))
+
+    def renderHPBar(self):
+
+        diff = (self.maxHPBarWidth / self.maxHP) * self.maxHPBarWidth 
+        enemyHPBarWidth = (self.currentHP / self.maxHPBarWidth) * diff
+        
+        x = self.hpBarXPosition
+        y = self.hpBarYPosition
+
+        black = (0,0,0)
+
+        background = pg.draw.rect(self.screen,black,(x,y,self.maxHPBarWidth+10,self.maxHPBarHeight+10))
+        hpBar = self.getHPBar(x+5,y+5,enemyHPBarWidth,self.maxHPBarWidth,self.maxHPBarHeight)
+    
     def update(self):
         self.attackTimer.update()
         self.handlePlayerInput()
+        self.renderHPBar()
         self.handleMovement()
         self.handleRendering()

@@ -13,7 +13,9 @@ class Level:
         self.enemyCollision = pg.sprite.Group()
 
         self.player = Player((150,150),[self.visibleSprites],self.createPlayerAttack)
-        self.slime = Slime((250,200),[self.visibleSprites,self.enemyCollision],self.player) 
+        Slime((250,200),[self.visibleSprites,self.enemyCollision],self.player) 
+        Slime((250,100),[self.visibleSprites,self.enemyCollision],self.player) 
+        Slime((100,50),[self.visibleSprites,self.enemyCollision],self.player) 
         self.playerAttack = None
 
 

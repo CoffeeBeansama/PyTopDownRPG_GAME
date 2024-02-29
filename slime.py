@@ -1,5 +1,6 @@
 import pygame as pg
-from support import import_folder
+from support import import_folder,drawBox
+from timer import Timer
 
 class Slime(pg.sprite.Sprite):
     def __init__(self,pos,group,player):
@@ -7,7 +8,9 @@ class Slime(pg.sprite.Sprite):
         self.pos = pos
         self.player = player
         
-        self.maxHP = 10
+        self.screen = pg.display.get_surface()
+
+        self.maxHP = 30
         self.currentHP = self.maxHP
 
         self.initializeSprites()
@@ -30,6 +33,13 @@ class Slime(pg.sprite.Sprite):
 
         self.frame_index = 0
         self.animationTime = 1 / 8
+
+        self.maxHPBarWidth = 25
+        self.maxHPBarHeight = 3
+        
+        self.attackDamage = 5
+        self.attackTimer = Timer(2000,self.damagePlayer)
+        
 
     def initializeSprites(self): 
         self.spritePath = "Sprites/Slime/"
@@ -60,35 +70,52 @@ class Slime(pg.sprite.Sprite):
            playerPosition = (player_vec - enemy_vec).normalize()
         return playerPosition
     
+    def takeDamage(self,damage):
+        self.currentHP -= damage
+        if self.currentHP <= 0:
+           self.switchState("Death")
+        else:
+           self.switchState("Hurt")
+        
+            
 
     def switchState(self,newState):
         self.currentState = newState
         self.frame_index = 0
 
     def idleState(self):        
+        self.direction = pg.math.Vector2()
         if self.getPlayerDistance() <= self.chaseRadius:
            self.switchState("Chase")
 
     def chaseState(self):
         self.direction = self.getPlayerPosition()
-
         if self.getPlayerDistance() >= self.chaseRadius:
-           self.direction = pg.math.Vector2()
            self.switchState("Idle")
 
         if self.getPlayerDistance() <= self.attackRadius:
            self.switchState("Attack") 
+    
+    def damagePlayer(self):
+        if hasattr(self.player,"takeDamage"):
+           self.player.takeDamage(self.attackDamage)
+
 
     def attackState(self):
+        self.attackTimer.update()
         self.direction = pg.math.Vector2()
+
+        if not self.attackTimer.activated:
+           self.attackTimer.activate()
+
         if self.getPlayerDistance() >= self.attackRadius + 5:
            self.switchState("Chase")
 
     def hurtState(self):
-        pass
+        self.direction = -self.getPlayerPosition()
 
     def deathState(self):
-        pass
+        self.direction = pg.math.Vector2()
     
     
     def handleMovement(self):
@@ -107,15 +134,43 @@ class Slime(pg.sprite.Sprite):
         self.frame_index += self.animationTime
 
         if self.frame_index >= len(animation):
+            if self.currentState == "Death":
+               self.kill()
+            if self.currentState == "Hurt":
+               self.switchState("Chase")
             self.frame_index = 0
+            
+
         
         self.sprite = animation[int(self.frame_index)]
         self.sprite = self.handleSpriteRotation()
         self.rect = self.sprite.get_rect(center=self.hitbox.center)
+    
+    def drawHPBar(self,surface,x,y,width,maxWidth,height): 
+        red = (255,0, 0)
+        green = (0, 255, 0)
+        pg.draw.rect(surface,red,(x,y,maxWidth,height))
+        return pg.draw.rect(surface,green,(x,y,width,height))
+
+    def handleRenderingHPBar(self,surface,offset):
+        if self.currentState == "Idle": return
+
+        diff = (self.maxHPBarWidth / self.maxHP) * self.maxHPBarWidth 
+        enemyHPBarWidth = (self.currentHP / self.maxHPBarWidth) * diff
+        
+        x = offset[0] + 3
+        y = offset[1] + 30
+
+        black = (0,0,0)
+
+        background = pg.draw.rect(surface,black,(x,y,self.maxHPBarWidth+2,self.maxHPBarHeight+2))
+        hpBar = self.drawHPBar(surface,x+1,y+1,enemyHPBarWidth,self.maxHPBarWidth,self.maxHPBarHeight)
+    
 
     def update(self):
         self.handleMovement()
         self.handleAnimation()
+
         currentState = self.stateCache.get(self.currentState)
         currentState()
 

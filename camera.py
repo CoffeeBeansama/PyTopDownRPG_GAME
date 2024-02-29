@@ -39,6 +39,9 @@ class CameraGroup(pg.sprite.Group):
         for sprite in sorted(self.sprites(), key=lambda sprite: sprite.rect.centery):
             self.offset_rect = sprite.rect.topleft - self.offset + self.internalOffset
             self.internalSurface.blit(sprite.sprite, self.offset_rect)
+            
+            if hasattr(sprite,"handleRenderingHPBar"):
+               sprite.handleRenderingHPBar(self.internalSurface,self.offset_rect)
 
         scaledSurface = pg.transform.scale(self.internalSurface, self.zoomInSize)
         self.scaledRect = scaledSurface.get_rect(center=(self.half_width, self.half_height))
